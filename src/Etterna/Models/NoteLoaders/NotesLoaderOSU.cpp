@@ -205,8 +205,10 @@ OsuLoader::SetTimingData(map<string, map<string, string>> parsedData, Song& out)
 
 	auto general = parsedData["General"];
 	out.m_fMusicSampleStartSeconds = stof(general["AudioLeadIn"]) / 1000.0f;
-	out.m_fMusicSampleLengthSeconds =
-	  stof(general["PreviewTime"]) / 1000.0f; // these probably aren't right
+
+	if (!general["PreviewTime"].empty()) {
+		out.m_fMusicSampleLengthSeconds = stof(general["PreviewTime"]) / 1000.f;
+	}
 }
 
 bool
