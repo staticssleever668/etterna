@@ -3,6 +3,8 @@
 #ifndef LuaBinding_H
 #define LuaBinding_H
 
+#include "Core/Services/Locator.hpp"
+
 #include "Etterna/Singletons/LuaManager.h"
 class LuaReference;
 
@@ -347,7 +349,10 @@ class LuaClass : public LuaTable
 #define LUA_REGISTER_NAMESPACE(T)                                              \
 	static void Register##T(lua_State* L)                                      \
 	{                                                                          \
+		lua_getglobal(L, "_ETTERNA_G"); \
 		luaL_register(L, #T, T##Table);                                        \
+		Locator::getLogger()->fatal("lua top: {}, type name: {}", lua_gettop(L), #T); \
+		lua_setfield(L, lua_gettop(L) - 1, #T); \
 		lua_pop(L, 1);                                                         \
 	}                                                                          \
 	REGISTER_WITH_LUA_FUNCTION(Register##T)

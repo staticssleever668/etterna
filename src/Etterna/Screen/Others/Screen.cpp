@@ -403,6 +403,7 @@ Screen::PassInputToLua(const InputEventPlus& input)
 	  std::chrono::steady_clock::now() - input.DeviceI.ts;
 	float inputAgo = timeDelta.count();
 
+	// TODO(yaroslav): pass this to sandbox.
 	// Construct the table once, and reuse it.
 	lua_createtable(L, 0, 7);
 	{ // This block is meant to improve clarity.  A subtable is created for

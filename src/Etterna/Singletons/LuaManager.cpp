@@ -161,8 +161,15 @@ void
 LuaManager::SetGlobal(const std::string& sName, int val)
 {
 	Lua* L = Get();
+
 	LuaHelpers::Push(L, val);
 	lua_setglobal(L, sName.c_str());
+
+	lua_getglobal(L, "_ETTERNA_G");
+	LuaHelpers::Push(L, val);
+	lua_setfield(L, lua_gettop(L) - 1, sName.c_str());
+	lua_pop(L, 1);
+
 	Release(L);
 }
 
@@ -170,8 +177,15 @@ void
 LuaManager::SetGlobal(const std::string& sName, const std::string& val)
 {
 	Lua* L = Get();
+
 	LuaHelpers::Push(L, val);
 	lua_setglobal(L, sName.c_str());
+
+	lua_getglobal(L, "_ETTERNA_G");
+	LuaHelpers::Push(L, val);
+	lua_setfield(L, lua_gettop(L) - 1, sName.c_str());
+	lua_pop(L, 1);
+
 	Release(L);
 }
 
@@ -643,6 +657,10 @@ LuaManager::LuaManager()
 	m_pLuaMain = L;
 
 	luaL_openlibs(L);
+
+	// Create the sandboxed global table.
+	lua_newtable(L);
+	lua_setglobal(L, "_ETTERNA_G");
 
 	// Store the thread pool in a table on the stack, in the main thread.
 #define THREAD_POOL 1
@@ -1238,9 +1256,23 @@ LuaHelpers::RunScriptOnStack(Lua* L,
 							 bool ReportError,
 							 bool blank_env)
 {
-	if (blank_env) {
-		lua_newtable(L);
-		lua_setfenv(L, lua_gettop(L) - Args - 1);
+	bool do_sandbox = !blank_env;
+	if (do_sandbox) {
+		lua_getglobal(L, "_ETTERNA_G");
+
+		lua_getfield(L, lua_gettop(L), "is_populated");
+		bool is_populated = !lua_isnil(L, lua_gettop(L));
+		lua_pop(L, 1);
+
+		if (is_populated) {
+			int rc = lua_setfenv(L, lua_gettop(L) - Args - 1);
+			if (rc < 1) {
+				Locator::getLogger()->error("WTF");
+			}
+		} else {
+			// Lua call in above branch pops the table for us.
+			lua_pop(L, 1);
+		}
 	}
 	lua_pushcfunction(L, GetLuaStack);
 
